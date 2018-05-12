@@ -50,7 +50,8 @@ tests.test_load_vgg(load_vgg, tf)
 
 def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     """
-    Create the layers for a fully convolutional network.  Build skip-layers using the vgg layers.
+    Create the layers for a fully convolutional network.
+    Build skip-layers using the vgg layers.
     :param vgg_layer3_out: TF Tensor for VGG Layer 3 output
     :param vgg_layer4_out: TF Tensor for VGG Layer 4 output
     :param vgg_layer7_out: TF Tensor for VGG Layer 7 output
@@ -58,7 +59,29 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :return: The Tensor for the last layer of output
     """
     # TODO: Implement function
-    return None
+    def conv1x1(x, n_outputs):
+        return tf.layers.conv2d(
+            x, n_outputs, kernel_size=1, padding='same',
+            kernel_initializer=tf.truncated_normal_initializer(stddev=0.01),
+            kernel_regularizer=tf.contrib.layers.l2_regularizer(0.01))
+
+    def upsample(x, n_outputs, kernel_size, stride):
+        return tf.layers.conv2d_transpose(
+            x, n_outputs, kernel_size, stride, padding='same',
+            kernel_initializer=tf.truncated_normal_initializer(stddev=0.01))
+
+    layer7_1x1 = conv1x1(vgg_layer7_out, num_classes)
+    layer4_1x1 = conv1x1(vgg_layer4_out, num_classes)
+    layer3_1x1 = conv1x1(vgg_layer3_out, num_classes)
+    layer7_up = upsample(layer7_1x1, num_classes, kernel_size=5, stride=2)
+    layer4_skip = tf.add(layer4_1x1, layer7_up)
+    layer4_up = upsample(layer4_skip, num_classes, kernel_size=5, stride=2)
+    layer3_skip = tf.add(layer3_1x1, layer4_up)
+    last_layer = upsample(layer3_skip, num_classes, kernel_size=16, stride=8)
+
+    return last_layer
+
+
 tests.test_layers(layers)
 
 
