@@ -154,7 +154,7 @@ tests.test_train_nn(train_nn)
 
 def run():
     epochs = 50
-    batch_size = 4
+    batch_size = 16
     label = tf.placeholder(tf.uint8, name='label')
     learning_rate = tf.placeholder(tf.float32, name='lr')
 
