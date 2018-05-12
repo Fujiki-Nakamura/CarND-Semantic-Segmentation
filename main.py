@@ -85,14 +85,17 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
 tests.test_optimize(optimize)
 
 
-def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image,
-             correct_label, keep_prob, learning_rate):
+def train_nn(
+    sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image,
+    correct_label, keep_prob, learning_rate
+):
     """
     Train neural network and print out the loss during training.
     :param sess: TF Session
     :param epochs: Number of epochs
     :param batch_size: Batch size
-    :param get_batches_fn: Function to get batches of training data.  Call using get_batches_fn(batch_size)
+    :param get_batches_fn: Function to get batches of training data.
+                           Call using get_batches_fn(batch_size)
     :param train_op: TF Operation to train the neural network
     :param cross_entropy_loss: TF Tensor for the amount of loss
     :param input_image: TF Placeholder for input images
@@ -101,7 +104,24 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     :param learning_rate: TF Placeholder for learning rate
     """
     # TODO: Implement function
-    pass
+    lr = 0.001
+    kp = 0.8
+    n_samples = 0
+    for epoch_i in range(1, epochs + 1):
+        total_loss = 0.0
+        for images, labels in get_batches_fn(batch_size):
+            n_samples += len(images)
+            _, loss = sess.run(
+                [train_op, cross_entropy_loss],
+                feed_dict={
+                    input_image: images, correct_label: labels,
+                    keep_prob: kp, learning_rate: lr
+                }
+            )
+            total_loss += loss
+        print('Epoch {} Loss {:.4f}'.format(epoch_i, total_loss / n_samples))
+
+
 tests.test_train_nn(train_nn)
 
 
