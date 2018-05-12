@@ -1,3 +1,4 @@
+import argparse
 import os.path
 import tensorflow as tf
 import helper
@@ -85,7 +86,7 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 tests.test_layers(layers)
 
 
-def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
+def optimize(nn_last_layer, correct_label, learning_rate, num_classes, args=None):
     """
     Build the TensorFLow loss and optimizer operations.
     :param nn_last_layer: TF Tensor of the last layer in the neural network
@@ -95,13 +96,14 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     :return: Tuple of (logits, train_op, cross_entropy_loss)
     """
     # TODO: Implement function
+    l2_coeff = 0.001 if args is None else args.l2_coeff
     logits = tf.reshape(nn_last_layer, (-1, num_classes))
     labels = tf.reshape(correct_label, (-1, num_classes))
     cross_entropy_loss = tf.nn.softmax_cross_entropy_with_logits(
         labels=labels, logits=logits)
     cross_entropy_loss = tf.reduce_sum(cross_entropy_loss)
     l2_loss = sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
-    cross_entropy_loss += 0.001 * l2_loss
+    cross_entropy_loss += l2_coeff * l2_loss
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
     train_op = optimizer.minimize(cross_entropy_loss)
 
@@ -113,7 +115,7 @@ tests.test_optimize(optimize)
 
 def train_nn(
     sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image,
-    correct_label, keep_prob, learning_rate
+    correct_label, keep_prob, learning_rate, args=None
 ):
     """
     Train neural network and print out the loss during training.
@@ -131,8 +133,8 @@ def train_nn(
     """
     # TODO: Implement function
     sess.run(tf.global_variables_initializer())
-    lr = 0.001
-    kp = 0.8
+    lr = 0.001 if args is None else args.lr
+    kp = 0.5 if args is None else args.keep_prob
     n_samples = 0
     for epoch_i in range(1, epochs + 1):
         total_loss = 0.0
@@ -152,16 +154,16 @@ def train_nn(
 tests.test_train_nn(train_nn)
 
 
-def run():
-    epochs = 50
-    batch_size = 16
+def run(args):
+    epochs = args.epochs
+    batch_size = args.batch_size
     label = tf.placeholder(tf.uint8, name='label')
     learning_rate = tf.placeholder(tf.float32, name='lr')
 
     num_classes = 2
     image_shape = (160, 576)
-    data_dir = './data'
-    runs_dir = './runs'
+    data_dir = args.data_dir
+    runs_dir = args.runs_dir
     tests.test_for_kitti_dataset(data_dir)
 
     # Download pretrained vgg model
@@ -187,12 +189,12 @@ def run():
             sess, vgg_path)
         last_layer = layers(layer3_out, layer4_out, layer7_out, num_classes)
         logits, train_op, cross_entropy_loss = optimize(
-            last_layer, label, learning_rate, num_classes)
+            last_layer, label, learning_rate, num_classes, args)
 
         # TODO: Train NN using the train_nn function
         train_nn(
             sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss,
-            input_image, label, keep_prob, learning_rate)
+            input_image, label, keep_prob, learning_rate, args)
 
         # TODO: Save inference data using helper.save_inference_samples
         helper.save_inference_samples(
@@ -202,4 +204,13 @@ def run():
 
 
 if __name__ == '__main__':
-    run()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--epochs', type=int, default=10)
+    parser.add_argument('--batch_size', type=int, default=8)
+    parser.add_argument('--lr', type=float, default=0.001)
+    parser.add_argument('--keep_prob', type=float, default=0.5)
+    parser.add_argument('--l2_coeff', type=float, default=0.001)
+    parser.add_argument('--data_dir', type=str, default='./data')
+    parser.add_argument('--runs_dir', type=str, default='./runs')
+    args, unknown_args = parser.parse_known_args()
+    run(args)
