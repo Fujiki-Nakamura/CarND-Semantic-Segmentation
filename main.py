@@ -130,6 +130,7 @@ def train_nn(
     :param learning_rate: TF Placeholder for learning rate
     """
     # TODO: Implement function
+    sess.run(tf.global_variables_initializer())
     lr = 0.001
     kp = 0.8
     n_samples = 0
