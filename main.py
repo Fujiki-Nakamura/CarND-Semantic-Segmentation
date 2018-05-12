@@ -152,6 +152,11 @@ tests.test_train_nn(train_nn)
 
 
 def run():
+    epochs = 50
+    batch_size = 4
+    label = tf.placeholder(tf.uint8, name='label')
+    learning_rate = tf.placeholder(tf.float32, name='lr')
+
     num_classes = 2
     image_shape = (160, 576)
     data_dir = './data'
@@ -170,17 +175,27 @@ def run():
         # Path to vgg model
         vgg_path = os.path.join(data_dir, 'vgg')
         # Create function to get batches
-        get_batches_fn = helper.gen_batch_function(os.path.join(data_dir, 'data_road/training'), image_shape)
+        get_batches_fn = helper.gen_batch_function(
+            os.path.join(data_dir, 'data_road/training'), image_shape)
 
         # OPTIONAL: Augment Images for better results
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
 
         # TODO: Build NN using load_vgg, layers, and optimize function
+        input_image, keep_prob, layer3_out, layer4_out, layer7_out = load_vgg(
+            sess, vgg_path)
+        last_layer = layers(layer3_out, layer4_out, layer7_out, num_classes)
+        logits, train_op, cross_entropy_loss = optimize(
+            last_layer, label, learning_rate, num_classes)
 
         # TODO: Train NN using the train_nn function
+        train_nn(
+            sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss,
+            input_image, label, keep_prob, learning_rate)
 
         # TODO: Save inference data using helper.save_inference_samples
-        #  helper.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image)
+        helper.save_inference_samples(
+            runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image)
 
         # OPTIONAL: Apply the trained model to a video
 
